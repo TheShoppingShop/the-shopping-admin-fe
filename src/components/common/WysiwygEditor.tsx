@@ -9,10 +9,22 @@ export type WysiwygEditorProps = {
   minHeight?: number; // in px
 };
 
+const modules = {
+  toolbar: [
+    // Guruhlar bo‘yicha tugmalar
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    ["blockquote", "code-block"],  // bu yerda code-block tugma qo‘shilyapti
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["link", "image"],
+    ["clean"],
+  ],
+};
+
 export default function WysiwygEditor({ value, onChange, placeholder, minHeight = 240 }: WysiwygEditorProps) {
   return (
     <div className="rounded-md border wysiwyg" style={{ ["--wysiwyg-min-h" as any]: `${minHeight}px` }}>
-      <ReactQuill theme="snow" value={value} onChange={onChange} placeholder={placeholder} />
+      <ReactQuill theme="snow" value={value} onChange={onChange} placeholder={placeholder} modules={modules} />
     </div>
   );
 }

@@ -18,11 +18,14 @@ export type ModalProps = PropsWithChildren<{
   submitLabel?: string;
   disabled?: boolean;
   footer?: ReactNode;
+  loading?: boolean;
 }>;
 
-export default function Modal({ open, title, description, onClose, onSubmit, submitLabel = "Save", disabled, children, footer }: ModalProps) {
+export default function Modal({ open, title, description, onClose, onSubmit, submitLabel = "Save", disabled, children, footer, loading }: ModalProps) {
   return (
-    <Dialog open={open}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) onClose();
+    }}>
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -36,8 +39,8 @@ export default function Modal({ open, title, description, onClose, onSubmit, sub
                 Cancel
               </Button>
               {onSubmit && (
-                <Button onClick={onSubmit} disabled={disabled} type="button">
-                  {submitLabel}
+                <Button onClick={onSubmit} disabled={disabled || loading} type="button">
+                  {loading ? 'Loading...' : submitLabel}
                 </Button>
               )}
             </div>

@@ -132,15 +132,17 @@ export default function Videos() {
     setTitle(v.title || "");
     setDescription(v.description || "");
     setAmazonLink(v.amazonLink || "");
-    setTags(v.tags || []);
+    setTags(Array.isArray(v.tags) ? v.tags as string[] : []);
     setCategoryId(v.categoryId);
     setVideoFile(null);
     setThumbnailFile(null);
     setMetaTitle((v as any).metaTitle || "");
     setMetaDescription((v as any).metaDescription || "");
-    setMetaKeywords(((v as any).metaKeywords as string[]) || []);
-    setError(null);
-    setModalOpen(true);
+    setMetaKeywords(Array.isArray(v.tags) ? v.tags as string[] : []);
+    setTimeout(() => {
+      setError(null);
+      setModalOpen(true);
+    }, 400);
   };
 
   const createValid = title.trim() && description.trim() && amazonLink.trim() && tags.length > 0 && !!categoryId && videoFile && thumbnailFile;
@@ -156,7 +158,9 @@ export default function Videos() {
         setError("Please fill all required fields");
         return;
       }
+      setLoading(true);
       if (!editing) {
+        setMetaKeywords(tags);
         const form = new FormData();
         form.append("title", title);
         form.append("description", description);
@@ -204,6 +208,8 @@ export default function Videos() {
     } catch (e: any) {
       setError(e.message);
       toast({ title: "Error", description: e.message });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -391,6 +397,7 @@ export default function Videos() {
         onSubmit={onSave}
         submitLabel={editing ? "Save" : "Create"}
         disabled={!editing && !createValid}
+        loading={loading}
       >
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-3">
@@ -429,10 +436,10 @@ export default function Videos() {
               <label className="text-sm font-medium">SEO Meta Description</label>
               <Input value={metaDescription} onChange={(e)=>setMetaDescription(e.target.value)} placeholder="Optional" />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">SEO Meta Keywords</label>
-              <TagsInput value={metaKeywords} onChange={setMetaKeywords} placeholder="keyword + Enter" />
-            </div>
+            {/*<div className="space-y-2">*/}
+            {/*  <label className="text-sm font-medium">SEO Meta Keywords</label>*/}
+            {/*  <TagsInput value={metaKeywords} onChange={setMetaKeywords} placeholder="keyword + Enter" />*/}
+            {/*</div>*/}
             <div className="space-y-2">
               <FilePicker value={thumbnailFile} onChange={setThumbnailFile} accept="image/*" label="Thumbnail" previewType="image" />
             </div>
