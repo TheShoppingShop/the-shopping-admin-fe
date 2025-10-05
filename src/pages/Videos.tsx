@@ -13,6 +13,8 @@ import TagsInput from "@/components/common/TagsInput";
 import { http } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { VIEW_PREFERENCE_KEY } from "@/constants";
+import {Textarea} from "@/components/ui/textarea.tsx";
+import MultiSelect from "@/components/ui/MultiSelect.tsx";
 
 export type CategoryOption = { id: number; name: string };
 export type Video = {
@@ -21,7 +23,7 @@ export type Video = {
   description?: string;
   amazonLink?: string;
   tags?: string[];
-  categoryId?: number;
+  categoryIds?: number[];
   thumbnailUrl?: string;
   createdAt?: string;
 };
@@ -55,13 +57,18 @@ export default function Videos() {
   const [description, setDescription] = useState("");
   const [amazonLink, setAmazonLink] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [metaKeywords, setMetaKeywords] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const categoryOptions = useMemo(
+    () => categories.map(c => ({ value: String(c.id), label: c.name })),
+    [categories]
+  );
 
   useEffect(() => { document.title = "Videos | TheShopping Admin"; }, []);
 
@@ -71,8 +78,8 @@ export default function Videos() {
 
     pages.push(1);
 
-    let left = page - delta;
-    let right = page + delta;
+    const left = page - delta;
+    const right = page + delta;
 
     if (left > 2) pages.push("...");
     for (let i = Math.max(2, left); i <= Math.min(totalPages - 1, right); i++) {
@@ -110,7 +117,7 @@ export default function Videos() {
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     return items.filter((v) => {
-      const inCat = catFilter === "all" || String(v.categoryId ?? "") === catFilter;
+      const inCat = catFilter === "all" || (Array.isArray(v.categoryIds) && v.categoryIds.map(String).includes(catFilter));
       const inQuery = v.title?.toLowerCase().includes(q) || (v.tags || []).some((t) => t.toLowerCase().includes(q));
       return inCat && inQuery;
     });
@@ -120,7 +127,11 @@ export default function Videos() {
 
   const openCreate = () => {
     setEditing(null);
-    setTitle(""); setDescription(""); setAmazonLink(""); setTags([]); setCategoryId(undefined);
+    setTitle("");
+    setDescription("");
+    setAmazonLink("");
+    setTags([]);
+    setCategoryIds([]);
     setVideoFile(null); setThumbnailFile(null);
     setMetaTitle(""); setMetaDescription(""); setMetaKeywords([]);
     setError(null);
@@ -133,7 +144,7 @@ export default function Videos() {
     setDescription(v.description || "");
     setAmazonLink(v.amazonLink || "");
     setTags(Array.isArray(v.tags) ? v.tags as string[] : []);
-    setCategoryId(v.categoryId);
+    setCategoryIds(Array.isArray((v as any).categoryIds) ? (v as any).categoryIds : []);
     setVideoFile(null);
     setThumbnailFile(null);
     setMetaTitle((v as any).metaTitle || "");
@@ -145,13 +156,13 @@ export default function Videos() {
     }, 400);
   };
 
-  const createValid = title.trim() && description.trim() && amazonLink.trim() && tags.length > 0 && !!categoryId && videoFile && thumbnailFile;
+  const createValid = title.trim() && description.trim() && amazonLink.trim() && tags.length > 0 && categoryIds.length > 0 && videoFile && thumbnailFile;
 
   const onSave = async () => {
     try {
 
-      const appendList = (f: FormData, key: string, arr?: string[]) => {
-        (arr || []).forEach(v => f.append(key, v));
+      const appendList = (f: FormData, key: string, arr?: (string|number)[]) => {
+        (arr || []).forEach(v => f.append(key, String(v)));
       };
 
       if (!editing && !createValid) {
@@ -166,7 +177,7 @@ export default function Videos() {
         form.append("description", description);
         form.append("amazonLink", amazonLink);
         appendList(form, "tags", tags);
-        form.append("categoryId", String(categoryId));
+        appendList(form, "categoryIds", categoryIds);
         if (videoFile) form.append("video", videoFile);
         if (thumbnailFile) form.append("thumbnail", thumbnailFile);
         if (metaTitle) form.append("metaTitle", metaTitle);
@@ -175,32 +186,34 @@ export default function Videos() {
         await http.post(`/videos/upload`, form, { headers: { "Content-Type": "multipart/form-data" } });
         toast({ title: "Created", description: "Video uploaded" });
       } else {
-        const hasFiles = !!videoFile || !!thumbnailFile;
-        if (hasFiles) {
-          const form = new FormData();
-          if (title !== editing.title) form.append("title", title);
-          if (description !== (editing.description||"")) form.append("description", description);
-          if (amazonLink !== (editing.amazonLink||"")) form.append("amazonLink", amazonLink);
-          if (JSON.stringify(tags) !== JSON.stringify(editing.tags||[])) appendList(form, "tags", tags);
-          if (categoryId !== editing.categoryId) form.append("categoryId", String(categoryId));
-          if (videoFile) form.append("video", videoFile);
-          if (thumbnailFile) form.append("thumbnail", thumbnailFile);
-          if (metaTitle) form.append("metaTitle", metaTitle);
-          if (metaDescription) form.append("metaDescription", metaDescription);
-          if (metaKeywords.length) appendList(form, "metaKeywords", metaKeywords);
-          await http.put(`/videos/${editing.id}`, form, { headers: { "Content-Type": "multipart/form-data" } });
-        } else {
-          const body: any = {};
-          if (title !== editing.title) body.title = title;
-          if (description !== (editing.description||"")) body.description = description;
-          if (amazonLink !== (editing.amazonLink||"")) body.amazonLink = amazonLink;
-          if (JSON.stringify(tags) !== JSON.stringify(editing.tags||[])) body.tags = tags;
-          if (categoryId !== editing.categoryId) body.categoryId = categoryId;
-          if (metaTitle) body.metaTitle = metaTitle;
-          if (metaDescription) body.metaDescription = metaDescription;
-          if (metaKeywords.length) body.metaKeywords = metaKeywords;
-          await http.put(`/videos/${editing.id}`, body);
+        const form = new FormData();
+
+        if (title !== editing.title) form.append("title", title);
+        if (description !== (editing.description || "")) form.append("description", description);
+        if (amazonLink !== (editing.amazonLink || "")) form.append("amazonLink", amazonLink);
+
+        if (JSON.stringify(tags) !== JSON.stringify(editing.tags || [])) {
+          tags.forEach((t) => form.append("tags", t));
         }
+
+        const prevIds = Array.isArray((editing as any).categoryIds)
+          ? (editing as any).categoryIds
+          : [];
+        if (JSON.stringify(prevIds) !== JSON.stringify(categoryIds)) {
+          categoryIds.forEach((id) => form.append("categoryIds", String(id)));
+        }
+
+        if (metaTitle) form.append("metaTitle", metaTitle);
+        if (metaDescription) form.append("metaDescription", metaDescription);
+        if (metaKeywords.length) metaKeywords.forEach((kw) => form.append("metaKeywords", kw));
+
+        if (videoFile) form.append("video", videoFile);
+        if (thumbnailFile) form.append("thumbnail", thumbnailFile);
+
+        await http.put(`/videos/${editing.id}`, form, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        toast({ title: "Updated", description: "Video saved" });
         toast({ title: "Updated", description: "Video saved" });
       }
       setModalOpen(false);
@@ -278,7 +291,16 @@ export default function Videos() {
                   <TableRow key={v.id}>
                     <TableCell>{v.thumbnailUrl ? <img src={v.thumbnailUrl} alt={`${v.title} thumbnail`} className="h-12 w-20 rounded object-cover border" /> : <div className="h-12 w-20 rounded border bg-muted" />}</TableCell>
                     <TableCell className="font-medium">{v.title}</TableCell>
-                    <TableCell>{categories.find(c=>c.id===v.categoryId)?.name || '-'}</TableCell>
+                    <TableCell>
+                      {Array.isArray(v.categoryIds) && v.categoryIds.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {v.categoryIds.map(cid => {
+                            const c = categories.find(cc => cc.id === cid)
+                            return <Badge key={cid} variant="secondary">{c?.name ?? cid}</Badge>
+                          })}
+                        </div>
+                      ) : ('-')}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">{(v.tags||[]).map(t=> <Badge key={t} variant="secondary">{t}</Badge>)}</div>
                     </TableCell>
@@ -307,7 +329,16 @@ export default function Videos() {
                 {v.thumbnailUrl && <img src={v.thumbnailUrl} alt={`${v.title} thumbnail`} className="h-40 w-full object-cover" />}
                 <CardHeader className="pb-2"><CardTitle className="text-base">{v.title}</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
-                  <Badge variant="secondary">{categories.find(c=>c.id===v.categoryId)?.name || 'Uncategorized'}</Badge>
+                  <div className="flex flex-wrap gap-1">
+                    {Array.isArray(v.categoryIds) && v.categoryIds.length > 0 ? (
+                      v.categoryIds.map(cid => {
+                        const c = categories.find(cc => cc.id === cid)
+                        return <Badge key={cid} variant="secondary">{c?.name ?? cid}</Badge>
+                      })
+                    ) : (
+                      <Badge variant="outline">Uncategorized</Badge>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-1">{(v.tags||[]).map(t=> <Badge key={t}>{t}</Badge>)}</div>
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" variant="secondary" onClick={() => openEdit(v)}>Edit</Button>
@@ -411,12 +442,17 @@ export default function Videos() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Category</label>
-              <Select value={categoryId ? String(categoryId) : undefined} onValueChange={(v)=>setCategoryId(Number(v))}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={categories.map(c => ({ id: c.id, name: c.name }))}
+                value={categoryIds}
+                onChange={setCategoryIds}
+              />
+              {/*<Select value={categoryId ? String(categoryId) : undefined} onValueChange={(v)=>setCategoryId(Number(v))}>*/}
+              {/*  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>*/}
+              {/*  <SelectContent>*/}
+              {/*    {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}*/}
+              {/*  </SelectContent>*/}
+              {/*</Select>*/}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Tags</label>
@@ -447,7 +483,8 @@ export default function Videos() {
         </div>
         <div className="space-y-3">
           <label className="text-sm font-medium">Description</label>
-          <WysiwygEditor value={description} onChange={setDescription} placeholder="Write a compelling description..." minHeight={editing ? 280 : 440} />
+          {/*<WysiwygEditor value={description} onChange={setDescription} placeholder="Write a compelling description..." minHeight={editing ? 280 : 440} />*/}
+          <Textarea value={description} onChange={setDescription} placeholder="Write a compelling description..." rows={10} />
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
       </Modal>
