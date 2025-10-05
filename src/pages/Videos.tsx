@@ -38,6 +38,7 @@ export interface ResponsePagination<T> {
 export default function Videos() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [items, setItems] = useState<Video[]>([]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -169,7 +170,7 @@ export default function Videos() {
         setError("Please fill all required fields");
         return;
       }
-      setLoading(true);
+      setSaveLoading(true);
       if (!editing) {
         setMetaKeywords(tags);
         const form = new FormData();
@@ -222,7 +223,7 @@ export default function Videos() {
       setError(e.message);
       toast({ title: "Error", description: e.message });
     } finally {
-      setLoading(false);
+      setSaveLoading(false);
     }
   };
 
@@ -431,7 +432,7 @@ export default function Videos() {
         onSubmit={onSave}
         submitLabel={editing ? "Save" : "Create"}
         disabled={!editing && !createValid}
-        loading={loading}
+        loading={saveLoading}
       >
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-3">
