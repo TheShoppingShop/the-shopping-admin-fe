@@ -17,6 +17,7 @@ export type Category = {
 export default function Categories() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [items, setItems] = useState<Category[]>([]);
   const [query, setQuery] = useState("");
 
@@ -65,6 +66,7 @@ export default function Categories() {
 
   const onSave = async () => {
     setError(null);
+    setSaveLoading(true);
     try {
       if (!editing && (!name.trim() || !file)) {
         setError("Name and image are required");
@@ -86,6 +88,8 @@ export default function Categories() {
     } catch (e: any) {
       setError(e.message);
       toast({ title: "Error", description: e.message });
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -162,6 +166,7 @@ export default function Categories() {
         onSubmit={onSave}
         submitLabel={editing ? "Save" : "Create"}
         disabled={!editing && (!name.trim() || !file)}
+        loading={saveLoading}
       >
         <div className="space-y-3">
           <div className="space-y-2">
