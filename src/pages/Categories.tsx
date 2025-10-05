@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 export type Category = {
   id: number;
   name: string;
-  image?: string;
+  imgUrl?: string;
 };
 
 export default function Categories() {
@@ -135,8 +135,8 @@ export default function Categories() {
               filtered.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
-                    {c.image ? (
-                      <img src={c.image} alt={`${c.name} image`} className="h-12 w-12 rounded object-cover border" />
+                    {c.imgUrl ? (
+                      <img src={c.imgUrl} alt={`${c.imgUrl} image`} className="h-12 w-12 rounded object-cover border" />
                     ) : (
                       <div className="h-12 w-12 rounded border bg-muted" />
                     )}

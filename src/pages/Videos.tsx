@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Modal from "@/components/common/Modal";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import FilePicker from "@/components/common/FilePicker";
-import WysiwygEditor from "@/components/common/WysiwygEditor";
+import {ThumbnailCell} from '@/components/common/ThumbnailImgModal.tsx'
 import TagsInput from "@/components/common/TagsInput";
 import { http } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
@@ -289,7 +289,10 @@ export default function Videos() {
               ) : (
                 filtered.map((v) => (
                   <TableRow key={v.id}>
-                    <TableCell>{v.thumbnailUrl ? <img src={v.thumbnailUrl} alt={`${v.title} thumbnail`} className="h-12 w-20 rounded object-cover border" /> : <div className="h-12 w-20 rounded border bg-muted" />}</TableCell>
+                    {/*<TableCell>{v.thumbnailUrl ? <img src={v.thumbnailUrl} alt={`${v.title} thumbnail`} className="h-12 w-20 rounded object-cover border" /> : <div className="h-12 w-20 rounded border bg-muted" />}</TableCell>*/}
+                    <TableCell>
+                      <ThumbnailCell v={v} />
+                    </TableCell>
                     <TableCell className="font-medium">{v.title}</TableCell>
                     <TableCell>
                       {Array.isArray(v.categoryIds) && v.categoryIds.length > 0 ? (
