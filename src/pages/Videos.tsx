@@ -507,7 +507,7 @@ export default function Videos() {
         <div className="space-y-3">
           <label className="text-sm font-medium">Description</label>
           {/*<WysiwygEditor value={description} onChange={setDescription} placeholder="Write a compelling description..." minHeight={editing ? 280 : 440} />*/}
-          <Textarea value={description} onChange={setDescription} placeholder="Write a compelling description..." rows={10} />
+          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Write a compelling description..." rows={10} />
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
       </Modal>
