@@ -15,6 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 import { VIEW_PREFERENCE_KEY } from "@/constants";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import MultiSelect from "@/components/ui/MultiSelect.tsx";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem, PaginationLink, PaginationNext,
+  PaginationPrevious
+} from "@/components/ui/pagination.tsx";
 
 export type CategoryOption = { id: number; name: string };
 export type Video = {
@@ -243,6 +250,31 @@ export default function Videos() {
     }
   };
 
+  useEffect(() => {
+    load();
+  }, [page, limit]);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setPage(newPage);
+  };
+
+  // sahifalarni ko‘rsatish uchun helper
+  const getVisiblePages = () => {
+    const delta = 1;
+    const pages: (number | string)[] = [];
+    const left = Math.max(2, page - delta);
+    const right = Math.min(totalPages - 1, page + delta);
+
+    pages.push(1);
+    if (left > 2) pages.push("...");
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < totalPages - 1) pages.push("...");
+    if (totalPages > 1) pages.push(totalPages);
+
+    return pages;
+  };
+
   return (
     <section className="space-y-4">
       <header className="flex items-center justify-between gap-2">
@@ -361,56 +393,43 @@ export default function Videos() {
           Showing {items.length} of {total} videos
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 1}
-            onClick={() => setPage(1)}
-          >
-            « First
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            ‹ Prev
-          </Button>
+        <Pagination className="mt-4">
+          <PaginationContent>
+            {/* Previous button */}
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => handlePageChange(page - 1)}
+                className={page === 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
 
-          {getPageNumbers().map((p, idx) =>
-            p === "..." ? (
-              <span key={idx} className="px-2">…</span>
-            ) : (
-              <Button
-                key={idx}
-                variant={p === page ? "default" : "outline"}
-                size="sm"
-                onClick={() => setPage(p as number)}
-              >
-                {p}
-              </Button>
-            )
-          )}
+            {/* Page numbers */}
+            {getVisiblePages().map((p, i) =>
+              p === "..." ? (
+                <PaginationItem key={i}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={i} className="cursor-pointer">
+                  <PaginationLink
+                    isActive={page === p}
+                    onClick={() => handlePageChange(p as number)}
+                  >
+                    {p}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next ›
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === totalPages}
-            onClick={() => setPage(totalPages)}
-          >
-            Last »
-          </Button>
-        </div>
+            {/* Next button */}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => handlePageChange(page + 1)}
+                className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
 
       {/* Limit select */}
